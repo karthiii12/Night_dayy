@@ -1,0 +1,37 @@
+# Videos
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Model weights
+*.pt
+*.onnx
+weights/
+runs/
+
+# Dataset
+dataset/
+datasets/
+ExDark/
+
+# Outputs
+outputs/
+webapp/static/outputs/
+
+# SSH keys
+ssh_key
+ssh_key.pub
+
+# Temp files
+tmpclaude-*
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+
+# Embedded git repos
+enhancer/EnlightenGAN-inference/

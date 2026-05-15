@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASIET ADAS — Night Vision Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #060a12;
+    color: #cdd9e8;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: #080d18;
+    border-bottom: 1px solid #0ff2;
+    padding: 0 40px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-accent {
+    width: 3px; height: 36px;
+    background: linear-gradient(180deg, #00ffe0, #0070ff);
+    border-radius: 2px;
+  }
+
+  .header-title h1 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #e8f4ff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .header-title p {
+    font-size: 11px;
+    color: #4a6a8a;
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  .header-badges {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 3px;
+    border: 1px solid;
+  }
+
+  .badge-cyan  { color: #00ffe0; border-color: #00ffe044; background: #00ffe010; }
+  .badge-blue  { color: #4da6ff; border-color: #4da6ff44; background: #4da6ff10; }
+  .badge-scope { color: #a78bfa; border-color: #a78bfa44; background: #a78bfa10; font-size: 9px; }
+
+  /* ── System status bar ── */
+  .status-bar {
+    background: #080d18;
+    border-bottom: 1px solid #0ff1;
+    padding: 8px 40px;
+    display: flex;
+    gap: 32px;
+    font-size: 11px;
+    color: #4a6a8a;
+    letter-spacing: 1px;
+  }
+
+  .status-item { display: flex; align-items: center; gap: 6px; }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #00ffe0;
+    box-shadow: 0 0 6px #00ffe0;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  .status-dot.yellow { background: #ffd700; box-shadow: 0 0 6px #ffd700; }
+  .status-dot.purple { background: #a78bfa; box-shadow: 0 0 6px #a78bfa; }
+  .status-dot.red    { background: #ff4444; box-shadow: 0 0 6px #ff4444; }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+
+  /* ── Main layout ── */
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+  /* ── Mode selector ── */
+  .mode-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .mode-card {
+    background: #0c1220;
+    border: 1px solid #1a2a3a;
+    border-radius: 10px;
+    padding: 24px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mode-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .mode-card.video-mode::before  { background: linear-gradient(90deg, #00ffe0, #0070ff); }
+  .mode-card.webcam-mode::before { background: linear-gradient(90deg, #ff6b35, #ffd700); }
+
+  .mode-card:hover,
+  .mode-card.active { border-color: #2a4a6a; background: #0e1828; }
+
+  .mode-card.active::before         { opacity: 1; }
+  .mode-card.active                 { border-color: #00ffe044; }
+  .mode-card.webcam-mode.active     { border-color: #ff6b3544; }
+
+  .mode-icon { font-size: 28px; margin-bottom: 12px; display: block; }
+
+  .mode-card h3 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #e8f4ff;
+    margin-bottom: 6px;
+  }
+
+  .mode-card p { font-size: 12px; color: #4a6a8a; line-height: 1.6; }
+
+  .mode-tag {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    margin-top: 10px;
+    text-transform: uppercase;
+  }
+
+  .tag-primary { background: #00ffe015; color: #00ffe0; border: 1px solid #00ffe033; }
+  .tag-warning { background: #ff6b3515; color: #ff6b35; border: 1px solid #ff6b3533; }
+  .tag-purple  { background: #a78bfa15; color: #a78bfa; border: 1px solid #a78bfa33; }
+
+  /* ── Cards ── */
+  .card {
+    background: #0c1220;
+    border: 1px solid #1a2a3a;
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #1a2a3a;
+  }
+
+  .card-header-accent { width: 3px; height: 18px; border-radius: 2px; }
+
+  .accent-cyan   { background: linear-gradient(180deg, #00ffe0, #0070ff); }
+  .accent-orange { background: linear-gradient(180deg, #ff6b35, #ffd700); }
+  .accent-purple { background: linear-gradient(180deg, #a78bfa, #6366f1); }
+  .accent-red    { background: linear-gradient(180deg, #ff4444, #ff6b35); }
+
+  .card-header h2 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #7a9ab0;
+  }
+
+  /* ── Upload zone ── */
+  .upload-zone {
+    border: 1.5px dashed #1e3a5a;
+    border-radius: 8px;
+    padding: 44px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+
+  .upload-zone:hover,
+  .upload-zone.drag { border-color: #00ffe0; background: #00ffe008; }
+
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-icon { font-size: 36px; margin-bottom: 12px; }
+  .upload-zone p { color: #4a6a8a; font-size: 13px; line-height: 1.8; }
+  .upload-zone strong { color: #00ffe0; }
+
+  /* ── Webcam panel ── */
+  #webcam-panel { display: none; }
+
+  .webcam-container {
+    background: #060a12;
+    border: 1px solid #1a2a3a;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .webcam-hud { position: relative; display: inline-block; margin-bottom: 16px; }
+
+  #webcam-video {
+    width: 100%;
+    max-width: 700px;
+    border-radius: 6px;
+    border: 1px solid #00ffe022;
+    display: block;
+    margin: 0 auto;
+    background: #000;
+  }
+
+  .hud-corner {
+    position: absolute;
+    width: 20px; height: 20px;
+    border-color: #00ffe0;
+    border-style: solid;
+    opacity: 0.7;
+  }
+
+  .hud-corner.tl { top: 8px; left: 8px;   border-width: 2px 0 0 2px; }
+  .hud-corner.tr { top: 8px; right: 8px;  border-width: 2px 2px 0 0; }
+  .hud-corner.bl { bottom: 8px; left: 8px;  border-width: 0 0 2px 2px; }
+  .hud-corner.br { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; }
+
+  .webcam-info {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 16px;
+    font-size: 11px;
+    color: #4a6a8a;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .webcam-info span { display: flex; align-items: center; gap: 6px; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s, transform 0.1s;
+    text-decoration: none;
+  }
+
+  .btn:active { transform: scale(0.97); }
+  .btn:hover  { opacity: 0.88; }
+
+  .btn-cyan   { background: #00ffe0; color: #060a12; }
+  .btn-orange { background: #ff6b35; color: #fff; }
+  .btn-ghost  { background: transparent; color: #7a9ab0; border: 1px solid #1e3a5a; }
+  .btn-red    { background: #ff3333; color: #fff; }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+  /* ── Progress ── */
+  .progress-wrap { margin-top: 20px; display: none; }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .progress-header p { font-size: 12px; color: #7a9ab0; letter-spacing: 1px; }
+
+  .pill {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    border: 1px solid;
+  }
+
+  .pill-proc { color: #4da6ff; border-color: #4da6ff44; background: #4da6ff10; }
+  .pill-done { color: #00ffe0; border-color: #00ffe044; background: #00ffe010; }
+  .pill-err  { color: #ff4444; border-color: #ff444444; background: #ff444410; }
+
+  .progress-bar-bg {
+    background: #1a2a3a;
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #00ffe0, #0070ff);
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  /* ── Stats ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .stat-box {
+    background: #080d18;
+    border: 1px solid #1a2a3a;
+    border-radius: 8px;
+    padding: 18px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-box::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .stat-box.s-cyan::after  { background: linear-gradient(90deg, #00ffe0, transparent); }
+  .stat-box.s-blue::after  { background: linear-gradient(90deg, #4da6ff, transparent); }
+  .stat-box.s-red::after   { background: linear-gradient(90deg, #ff4444, transparent); }
+  .stat-box.s-gold::after  { background: linear-gradient(90deg, #ffd700, transparent); }
+
+  .stat-value { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .s-cyan .stat-value { color: #00ffe0; }
+  .s-blue .stat-value { color: #4da6ff; }
+  .s-red  .stat-value { color: #ff4444; }
+  .s-gold .stat-value { color: #ffd700; }
+
+  .stat-label {
+    font-size: 10px;
+    color: #4a6a8a;
+    margin-top: 6px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  /* ── Tables ── */
+  .class-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+  .class-table th {
+    text-align: left;
+    color: #4a6a8a;
+    font-weight: 700;
+    padding: 8px 12px;
+    border-bottom: 1px solid #1a2a3a;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+
+  .class-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #0c1220;
+    color: #cdd9e8;
+  }
+
+  .class-table tr:hover td { background: #080d18; }
+
+  .bar-cell { display: flex; align-items: center; gap: 8px; }
+  .mini-bar-bg { flex: 1; background: #1a2a3a; border-radius: 3px; height: 5px; }
+  .mini-bar    { height: 100%; background: #00ffe0; border-radius: 3px; }
+
+  /* ── Video output ── */
+  video {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #1a2a3a;
+    background: #000;
+  }
+
+  /* ── Future scope banner ── */
+  .future-banner {
+    background: linear-gradient(135deg, #0e0a1a, #150e2a);
+    border: 1px solid #a78bfa33;
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .future-icon { font-size: 32px; flex-shrink: 0; }
+
+  .future-banner h3 {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #a78bfa;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .future-banner p { font-size: 12px; color: #6a5a8a; line-height: 1.7; }
+  .future-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+  /* ── Severity badges ── */
+  .sev-critical {
+    padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: 700;
+    background: #ff444420; color: #ff4444; border: 1px solid #ff444440;
+  }
+  .sev-high {
+    padding: 2px 8px; border-radius: 3px; font-size: 10px; font-weight: 700;
+    background: #ff6b3520; color: #ff6b35; border: 1px solid #ff6b3540;
+  }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid #0ff1;
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #2a4a6a;
+    letter-spacing: 1px;
+    margin-top: 40px;
+  }
+
+  /* ── Utilities ── */
+  #results-section { display: none; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="header-accent"></div>
+  <div class="header-title">
+    <h1>ADAS Night Vision System</h1>
+    <p>Adi Shankara Institute of Engineering &amp; Technology &nbsp;·&nbsp; MCA Final Year Project</p>
+  </div>
+  <div class="header-badges">
+    <span class="badge badge-cyan">EnlightenGAN</span>
+    <span class="badge badge-blue">YOLOv8x</span>
+    <span class="badge badge-scope">Surveillance Ready</span>
+  </div>
+</header>
+
+<!-- ── System status bar ── -->
+<div class="status-bar">
+  <div class="status-item">
+    <div class="status-dot"></div>
+    <span>ENLIGHTENGAN ONNX — ONLINE</span>
+  </div>
+  <div class="status-item">
+    <div class="status-dot"></div>
+    <span>YOLOV8X DETECTOR — ONLINE</span>
+  </div>
+  <div class="status-item">
+    <div class="status-dot yellow"></div>
+    <span>RESOLUTION: 256×192 → 1280×720</span>
+  </div>
+  <div class="status-item">
+    <div class="status-dot purple"></div>
+    <span>FUTURE SCOPE: SURVEILLANCE</span>
+  </div>
+  <div class="status-item">
+    <div class="status-dot red"></div>
+    <span>INCIDENT LOGGING — ACTIVE</span>
+  </div>
+</div>
+
+<main>
+
+  <!-- ── Mode selector ── -->
+  <div class="mode-selector">
+    <div class="mode-card video-mode active" id="mode-video" onclick="switchMode('video')">
+      <span class="mode-icon">🎬</span>
+      <h3>Video File Mode</h3>
+      <p>Upload a pre-recorded night video. The pipeline enhances each frame using EnlightenGAN and runs YOLOv8x detection. Output is a side-by-side comparison MP4.</p>
+      <span class="mode-tag tag-primary">Primary Demo Mode</span>
+    </div>
+
+    <div class="mode-card webcam-mode" id="mode-webcam" onclick="switchMode('webcam')">
+      <span class="mode-icon">📷</span>
+      <h3>Live Camera Mode</h3>
+      <p>Simulate real-time ADAS using your webcam. Launches the live HUD pipeline in a separate window via the backend. Best for low-light demo simulation.</p>
+      <span class="mode-tag tag-warning">Live Demo Mode</span>
+    </div>
+  </div>
+
+  <!-- ── COMPARISON PANEL ── -->
+  <div class="card" id="compare-card">
+    <div class="card-header">
+      <div class="card-header-accent" style="background:linear-gradient(180deg,#ffd700,#ff6b35)"></div>
+      <h2>Enhancement Comparison — Raw vs Gamma vs EnlightenGAN</h2>
+    </div>
+
+    <p style="font-size:12px;color:#4a6a8a;margin-bottom:20px;line-height:1.8;">
+      Upload any <strong style="color:#ffd700">raw night video</strong> to run a side-by-side detection benchmark
+      across 10 sampled frames. Proves EnlightenGAN detects significantly more objects than
+      simple gamma correction — countering the "just brightness" claim with real numbers.
+    </p>
+
+    <div class="upload-zone" id="cmp-drop-zone">
+      <input type="file" id="cmp-file-input" accept="video/*">
+      <div class="upload-icon">📊</div>
+      <p><strong>Click to upload</strong> a raw night video for comparison analysis</p>
+      <p style="font-size:11px;margin-top:6px;">Samples 10 frames · Takes ~30 seconds</p>
+    </div>
+
+    <div id="cmp-progress" style="display:none;margin-top:16px;">
+      <div class="progress-header">
+        <p id="cmp-progress-label">Analysing frames...</p>
+        <span class="pill pill-proc">RUNNING</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar" id="cmp-progress-bar"
+             style="background:linear-gradient(90deg,#ffd700,#ff6b35)"></div>
+      </div>
+    </div>
+
+    <div id="cmp-results" style="display:none;margin-top:24px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:24px;">
+        <div class="stat-box" style="border-color:#ff444433;">
+          <div class="stat-value" id="cmp-total-raw" style="color:#ff4444">—</div>
+          <div class="stat-label">Raw Input</div>
+          <div style="font-size:10px;color:#4a6a8a;margin-top:4px;">No enhancement</div>
+        </div>
+        <div class="stat-box" style="border-color:#ffd70033;">
+          <div class="stat-value" id="cmp-total-gamma" style="color:#ffd700">—</div>
+          <div class="stat-label">Gamma Correction</div>
+          <div style="font-size:10px;color:#4a6a8a;margin-top:4px;">Simple brightness fix</div>
+        </div>
+        <div class="stat-box" style="border-color:#00ffe033;">
+          <div class="stat-value" id="cmp-total-gan" style="color:#00ffe0">—</div>
+          <div class="stat-label">EnlightenGAN (Ours)</div>
+          <div style="font-size:10px;color:#4a6a8a;margin-top:4px;">Deep learning enhancement</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;"
+           id="cmp-improvement-row"></div>
+
+      <table class="class-table" id="cmp-table">
+        <thead>
+          <tr>
+            <th>Frame #</th>
+            <th style="color:#ff4444">Raw Detections</th>
+            <th style="color:#ffd700">Gamma Detections</th>
+            <th style="color:#00ffe0">GAN Detections</th>
+            <th>GAN vs Raw</th>
+          </tr>
+        </thead>
+        <tbody id="cmp-tbody"></tbody>
+      </table>
+
+      <div style="margin-top:16px;padding:14px;background:#080d18;border-radius:8px;
+                  border-left:3px solid #00ffe0;font-size:12px;color:#7a9ab0;line-height:1.8;">
+        <strong style="color:#00ffe0">Why this matters:</strong>
+        EnlightenGAN uses adversarial training to reconstruct realistic light — not just scale pixel values.
+        This recovers texture, contrast, and colour that simple gamma adjustment destroys,
+        giving the YOLO detector significantly more features to work with.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Future scope banner ── -->
+  <div class="future-banner">
+    <div class="future-icon">🔭</div>
+    <div>
+      <h3>Future Scope — Surveillance Extension</h3>
+      <p>This ADAS pipeline is architecturally extensible to fixed-camera surveillance systems. The same EnlightenGAN enhancement + YOLOv8x detection stack can monitor parking lots, perimeter zones, and entry points in complete darkness — replacing traditional IR cameras with a software-defined night vision layer.</p>
+      <div class="future-tags">
+        <span class="mode-tag tag-purple">Perimeter Security</span>
+        <span class="mode-tag tag-purple">Parking Surveillance</span>
+        <span class="mode-tag tag-purple">Entry Point Monitoring</span>
+        <span class="mode-tag tag-purple">CCTV Enhancement</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VIDEO MODE PANEL ── -->
+  <div id="video-panel">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-accent accent-cyan"></div>
+        <h2>Upload Night Video</h2>
+      </div>
+
+      <div class="upload-zone" id="drop-zone">
+        <input type="file" id="file-input" accept="video/*">
+        <div class="upload-icon">🎥</div>
+        <p><strong>Click to browse</strong> or drag &amp; drop a night driving video</p>
+        <p style="font-size:11px;margin-top:6px;">MP4 · AVI · MOV — Max 500 MB</p>
+      </div>
+
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-header">
+          <p id="progress-label">Processing...</p>
+          <span class="pill pill-proc" id="status-pill">PROCESSING</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── WEBCAM MODE PANEL ── -->
+  <div id="webcam-panel">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-accent accent-orange"></div>
+        <h2>Live Camera Feed</h2>
+      </div>
+
+      <div class="webcam-container">
+        <div class="webcam-hud">
+          <video id="webcam-video" autoplay muted playsinline></video>
+          <div class="hud-corner tl"></div>
+          <div class="hud-corner tr"></div>
+          <div class="hud-corner bl"></div>
+          <div class="hud-corner br"></div>
+        </div>
+
+        <div class="webcam-info">
+          <span><span class="status-dot" style="width:5px;height:5px;flex-shrink:0"></span> Browser preview</span>
+          <span>Processing runs in desktop window</span>
+        </div>
+
+        <p style="font-size:12px;color:#4a6a8a;margin-bottom:16px;line-height:1.8;">
+          Click <strong style="color:#ff6b35">Launch Live HUD</strong> to open the full ADAS processing
+          window on your desktop. The browser shows your raw camera preview only — EnlightenGAN
+          enhancement and YOLOv8x detections appear in the separate HUD window.
+        </p>
+
+        <div class="actions" style="justify-content:center;">
+          <button class="btn btn-orange" onclick="launchWebcam()">▶ Launch Live HUD</button>
+          <button class="btn btn-ghost"  onclick="stopWebcam()">■ Stop Preview</button>
+        </div>
+
+        <p id="webcam-status"
+           style="margin-top:14px;font-size:11px;color:#4a6a8a;letter-spacing:1px;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div id="results-section">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-accent accent-cyan"></div>
+        <h2>Detection Summary</h2>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box s-cyan">
+          <div class="stat-value" id="stat-frames">—</div>
+          <div class="stat-label">Frames Processed</div>
+        </div>
+        <div class="stat-box s-blue">
+          <div class="stat-value" id="stat-detections">—</div>
+          <div class="stat-label">Total Detections</div>
+        </div>
+        <div class="stat-box s-red">
+          <div class="stat-value" id="stat-danger">—</div>
+          <div class="stat-label">Danger Frames</div>
+        </div>
+        <div class="stat-box s-gold">
+          <div class="stat-value" id="stat-fps">—</div>
+          <div class="stat-label">Avg FPS</div>
+        </div>
+      </div>
+
+      <table class="class-table">
+        <thead>
+          <tr>
+            <th>Object Class</th>
+            <th>Count</th>
+            <th>Distribution</th>
+          </tr>
+        </thead>
+        <tbody id="class-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-accent accent-cyan"></div>
+        <h2>Output — Side by Side Comparison</h2>
+      </div>
+      <p style="font-size:12px;color:#4a6a8a;margin-bottom:14px;">
+        Left: original night input &nbsp;·&nbsp; Right: EnlightenGAN enhanced + YOLOv8x detections
+      </p>
+      <video id="output-video" controls autoplay loop muted></video>
+      <div class="actions">
+        <a class="btn btn-cyan" id="download-btn" href="#" download>⬇ Download Output</a>
+        <button class="btn btn-ghost" onclick="resetUI()">↩ Process Another Video</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── INCIDENT LOG ── -->
+  <div class="card" id="incidents-card">
+    <div class="card-header">
+      <div class="card-header-accent accent-red"></div>
+      <h2>Incident Log — Danger Detection History</h2>
+      <button class="btn btn-ghost" onclick="loadIncidents()"
+              style="margin-left:auto;padding:6px 14px;font-size:11px;">↻ Refresh</button>
+      <button class="btn btn-ghost" onclick="clearIncidents()"
+              style="margin-left:8px;padding:6px 14px;font-size:11px;
+                     color:#ff4444;border-color:#ff444433;">🗑 Clear</button>
+    </div>
+
+    <p style="font-size:11px;color:#4a6a8a;letter-spacing:1.5px;
+              text-transform:uppercase;margin-bottom:12px;">Processing Sessions</p>
+    <div id="sessions-list" style="margin-bottom:24px;">
+      <p style="font-size:12px;color:#2a4a6a;">No sessions yet — process a video first.</p>
+    </div>
+
+    <p style="font-size:11px;color:#4a6a8a;letter-spacing:1.5px;
+              text-transform:uppercase;margin-bottom:12px;">Danger Events (last 50)</p>
+    <div id="incidents-list">
+      <p style="font-size:12px;color:#2a4a6a;">No incidents logged yet.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <span>ASIET ADAS NIGHT VISION SYSTEM · MCA FINAL YEAR PROJECT · 2025–26</span>
+  <span>KARTHIK P M · ASI24MCA-2038 · GUIDE: DR SNEHA PRAKASH</span>
+</footer>
+
+<script>
+  // ── Mode switching ──────────────────────────────────────────────────────────
+  let webcamStream = null;
+
+  function switchMode(mode) {
+    document.getElementById("mode-video").classList.toggle("active",  mode === "video");
+    document.getElementById("mode-webcam").classList.toggle("active", mode === "webcam");
+    document.getElementById("video-panel").style.display  = mode === "video"  ? "block" : "none";
+    document.getElementById("webcam-panel").style.display = mode === "webcam" ? "block" : "none";
+    document.getElementById("results-section").style.display = "none";
+
+    if (mode === "webcam") {
+      startWebcamPreview();
+    } else {
+      if (webcamPollInterval) clearInterval(webcamPollInterval);
+      stopWebcam();
+    }
+  }
+
+  // ── Webcam browser preview ──────────────────────────────────────────────────
+  function startWebcamPreview() {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      .then(stream => {
+        webcamStream = stream;
+        document.getElementById("webcam-video").srcObject = stream;
+        document.getElementById("webcam-status").textContent = "📷 Camera preview active";
+      })
+      .catch(() => {
+        document.getElementById("webcam-status").textContent =
+          "⚠ Camera access denied or unavailable.";
+      });
+  }
+
+  function stopWebcam() {
+    if (webcamStream) {
+      webcamStream.getTracks().forEach(t => t.stop());
+      webcamStream = null;
+      document.getElementById("webcam-video").srcObject = null;
+    }
+    fetch("/stop_webcam", { method: "POST" })
+      .then(r => r.json())
+      .then(() => {
+        clearInterval(webcamPollInterval);
+        setWebcamStatus("idle", "■ HUD window closed.");
+        setTimeout(() => startWebcamPreview(), 1000);
+      });
+  }
+
+  function launchWebcam() {
+    if (webcamStream) {
+      webcamStream.getTracks().forEach(t => t.stop());
+      webcamStream = null;
+      document.getElementById("webcam-video").srcObject = null;
+    }
+
+    setWebcamStatus("running", "⏳ Releasing camera, launching HUD...");
+
+    setTimeout(() => {
+      fetch("/launch_webcam", { method: "POST" })
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok) {
+            setWebcamStatus("running",
+              `✅ HUD window launched (PID ${d.pid}) — check your taskbar`);
+            startWebcamPoll();
+          } else {
+            setWebcamStatus("error", "⚠ Launch failed: " + d.error);
+            startWebcamPreview();
+          }
+        })
+        .catch(() => {
+          setWebcamStatus("error", "⚠ Could not reach server");
+          startWebcamPreview();
+        });
+    }, 800);
+  }
+
+  // ── Webcam status polling ───────────────────────────────────────────────────
+  let webcamPollInterval = null;
+
+  function startWebcamPoll() {
+    clearInterval(webcamPollInterval);
+    webcamPollInterval = setInterval(() => {
+      fetch("/webcam_status")
+        .then(r => r.json())
+        .then(d => {
+          if (d.state === "running") {
+            setWebcamStatus("running",
+              `✅ HUD active (PID ${d.pid}) — processing live feed`);
+          } else if (d.state === "stopped") {
+            setWebcamStatus("idle", "■ HUD window was closed.");
+            clearInterval(webcamPollInterval);
+            setTimeout(() => startWebcamPreview(), 1000);
+          }
+        });
+    }, 2000);
+  }
+
+  function setWebcamStatus(state, msg) {
+    const el = document.getElementById("webcam-status");
+    el.textContent = msg;
+    el.style.color = state === "running" ? "#00ffe0"
+                   : state === "error"   ? "#ff4444"
+                   : "#4a6a8a";
+  }
+
+  // ── Drag and drop ───────────────────────────────────────────────────────────
+  const dropZone = document.getElementById("drop-zone");
+  const fileInput = document.getElementById("file-input");
+
+  dropZone.addEventListener("dragover",  e => { e.preventDefault(); dropZone.classList.add("drag"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("drag");
+    if (e.dataTransfer.files[0]) uploadFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files[0]) uploadFile(fileInput.files[0]);
+  });
+
+  // ── Upload & poll ───────────────────────────────────────────────────────────
+  let pollInterval = null;
+
+  function uploadFile(file) {
+    const fd = new FormData();
+    fd.append("video", file);
+
+    document.getElementById("progress-wrap").style.display = "block";
+    document.getElementById("results-section").style.display = "none";
+    setProgress(0, "Uploading...");
+
+    fetch("/upload", { method: "POST", body: fd })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { alert(data.error); return; }
+        pollJob(data.job_id);
+      })
+      .catch(() => alert("Upload failed."));
+  }
+
+  function pollJob(jobId) {
+    pollInterval = setInterval(() => {
+      fetch(`/status/${jobId}`)
+        .then(r => r.json())
+        .then(job => {
+          setProgress(job.progress, `Processing... ${job.progress}%`);
+          if (job.status === "done") {
+            clearInterval(pollInterval);
+            setProgress(100, "Complete!");
+            document.getElementById("status-pill").textContent = "DONE";
+            document.getElementById("status-pill").className   = "pill pill-done";
+            showResults(job);
+          } else if (job.status === "error") {
+            clearInterval(pollInterval);
+            document.getElementById("status-pill").textContent = "ERROR";
+            document.getElementById("status-pill").className   = "pill pill-err";
+          }
+        });
+    }, 1500);
+  }
+
+  function setProgress(pct, label) {
+    document.getElementById("progress-bar").style.width = pct + "%";
+    document.getElementById("progress-label").textContent = label;
+  }
+
+  function showResults(job) {
+    const s = job.stats;
+    document.getElementById("stat-frames").textContent     = s.total_frames.toLocaleString();
+    document.getElementById("stat-detections").textContent = s.total_detections.toLocaleString();
+    document.getElementById("stat-danger").textContent     = s.danger_frames.toLocaleString();
+    document.getElementById("stat-fps").textContent        = s.fps_avg;
+
+    const tbody = document.getElementById("class-tbody");
+    tbody.innerHTML = "";
+    const counts = s.class_counts;
+    const total  = Object.values(counts).reduce((a,b) => a+b, 0) || 1;
+    Object.entries(counts).sort((a,b) => b[1]-a[1]).forEach(([cls,cnt]) => {
+      const pct = Math.round((cnt/total)*100);
+      tbody.innerHTML += `
+        <tr>
+          <td>${cls}</td>
+          <td>${cnt}</td>
+          <td>
+            <div class="bar-cell">
+              <div class="mini-bar-bg">
+                <div class="mini-bar" style="width:${pct}%"></div>
+              </div>
+              <span style="font-size:11px;color:#4a6a8a;min-width:30px">${pct}%</span>
+            </div>
+          </td>
+        </tr>`;
+    });
+
+    const videoUrl = `/static/outputs/${job.output_filename}`;
+    const vid = document.getElementById("output-video");
+    vid.src = videoUrl;
+    vid.load();
+    document.getElementById("download-btn").href = videoUrl;
+    document.getElementById("results-section").style.display = "block";
+    document.getElementById("results-section").scrollIntoView({ behavior: "smooth" });
+
+    // Auto-refresh incident log after processing
+    setTimeout(loadIncidents, 1500);
+  }
+
+  function resetUI() {
+    document.getElementById("progress-wrap").style.display   = "none";
+    document.getElementById("results-section").style.display = "none";
+    document.getElementById("progress-bar").style.width = "0%";
+    document.getElementById("status-pill").textContent = "PROCESSING";
+    document.getElementById("status-pill").className   = "pill pill-proc";
+    fileInput.value = "";
+  }
+
+  // ── Comparison tool ─────────────────────────────────────────────────────────
+  const cmpDrop  = document.getElementById("cmp-drop-zone");
+  const cmpInput = document.getElementById("cmp-file-input");
+
+  cmpDrop.addEventListener("dragover",  e => { e.preventDefault(); cmpDrop.classList.add("drag"); });
+  cmpDrop.addEventListener("dragleave", () => cmpDrop.classList.remove("drag"));
+  cmpDrop.addEventListener("drop", e => {
+    e.preventDefault(); cmpDrop.classList.remove("drag");
+    if (e.dataTransfer.files[0]) runComparison(e.dataTransfer.files[0]);
+  });
+  cmpInput.addEventListener("change", () => {
+    if (cmpInput.files[0]) runComparison(cmpInput.files[0]);
+  });
+
+  function runComparison(file) {
+    document.getElementById("cmp-progress").style.display  = "block";
+    document.getElementById("cmp-results").style.display   = "none";
+    document.getElementById("cmp-drop-zone").style.display = "none";
+
+    let pct = 0;
+    const bar = document.getElementById("cmp-progress-bar");
+    const animInterval = setInterval(() => {
+      pct = Math.min(pct + 2, 90);
+      bar.style.width = pct + "%";
+    }, 600);
+
+    const fd = new FormData();
+    fd.append("video", file);
+
+    fetch("/compare", { method: "POST", body: fd })
+      .then(r => r.json())
+      .then(data => {
+        clearInterval(animInterval);
+        bar.style.width = "100%";
+        document.getElementById("cmp-progress-label").textContent = "Analysis complete!";
+
+        if (data.error) { alert("Comparison error: " + data.error); return; }
+
+        setTimeout(() => {
+          document.getElementById("cmp-progress").style.display  = "none";
+          document.getElementById("cmp-drop-zone").style.display = "block";
+          showComparisonResults(data);
+        }, 600);
+      })
+      .catch(err => {
+        clearInterval(animInterval);
+        alert("Comparison failed: " + err);
+        document.getElementById("cmp-progress").style.display  = "none";
+        document.getElementById("cmp-drop-zone").style.display = "block";
+      });
+  }
+
+  function showComparisonResults(data) {
+    document.getElementById("cmp-total-raw").textContent   = data.totals.raw;
+    document.getElementById("cmp-total-gamma").textContent = data.totals.gamma;
+    document.getElementById("cmp-total-gan").textContent   = data.totals.gan;
+
+    // Fix the +- display issue — show clean sign
+    function fmtPct(val) {
+      return val >= 0 ? `+${val}%` : `${val}%`;
+    }
+
+    const row = document.getElementById("cmp-improvement-row");
+    row.innerHTML = `
+      <div style="background:#00ffe010;border:1px solid #00ffe033;border-radius:6px;
+                  padding:10px 16px;font-size:12px;">
+        <span style="color:#00ffe0;font-weight:700;font-size:18px;">
+          ${fmtPct(data.improvement.gan_vs_raw)}
+        </span>
+        <span style="color:#4a6a8a;margin-left:8px;">GAN vs Raw (detections)</span>
+      </div>
+      <div style="background:#ffd70010;border:1px solid #ffd70033;border-radius:6px;
+                  padding:10px 16px;font-size:12px;">
+        <span style="color:#ffd700;font-weight:700;font-size:18px;">
+          ${fmtPct(data.improvement.gan_vs_gamma)}
+        </span>
+        <span style="color:#4a6a8a;margin-left:8px;">GAN vs Gamma (detections)</span>
+      </div>
+      <div style="background:#a78bfa10;border:1px solid #a78bfa33;border-radius:6px;
+                  padding:10px 16px;font-size:12px;">
+        <span style="color:#a78bfa;font-weight:700;font-size:18px;">
+          ${fmtPct(data.improvement.conf_gan_vs_raw)}
+        </span>
+        <span style="color:#4a6a8a;margin-left:8px;">GAN confidence vs Raw</span>
+      </div>
+      <div style="background:#4da6ff10;border:1px solid #4da6ff33;border-radius:6px;
+                  padding:10px 16px;font-size:12px;">
+        <span style="color:#4da6ff;font-weight:700;font-size:18px;">
+          ${fmtPct(data.improvement.conf_gan_vs_gamma)}
+        </span>
+        <span style="color:#4a6a8a;margin-left:8px;">GAN confidence vs Gamma</span>
+      </div>`;
+
+    const tbody = document.getElementById("cmp-tbody");
+    tbody.innerHTML = "";
+
+    document.querySelector("#cmp-table thead tr").innerHTML = `
+      <th>Frame #</th>
+      <th style="color:#ff4444">Raw Det / Conf</th>
+      <th style="color:#ffd700">Gamma Det / Conf</th>
+      <th style="color:#00ffe0">GAN Det / Conf</th>
+      <th>GAN vs Raw</th>`;
+
+    data.frame_labels.forEach((frameNum, i) => {
+      const raw       = data.results_raw[i]   || 0;
+      const gamma     = data.results_gamma[i] || 0;
+      const gan       = data.results_gan[i]   || 0;
+      const confRaw   = data.conf_raw[i]      || 0;
+      const confGamma = data.conf_gamma[i]    || 0;
+      const confGan   = data.conf_gan[i]      || 0;
+      const diff      = gan - raw;
+      const diffColor = diff > 0 ? "#00ffe0" : diff < 0 ? "#ff4444" : "#7a9ab0";
+      const diffText  = diff > 0 ? `+${diff}` : `${diff}`;
+
+      tbody.innerHTML += `
+        <tr>
+          <td style="color:#4a6a8a">${frameNum}</td>
+          <td style="color:#ff4444;font-weight:600">
+            ${raw}
+            <span style="color:#4a6a8a;font-size:10px;margin-left:4px">
+              ${(confRaw*100).toFixed(0)}%</span>
+          </td>
+          <td style="color:#ffd700;font-weight:600">
+            ${gamma}
+            <span style="color:#4a6a8a;font-size:10px;margin-left:4px">
+              ${(confGamma*100).toFixed(0)}%</span>
+          </td>
+          <td style="color:#00ffe0;font-weight:600">
+            ${gan}
+            <span style="color:#a78bfa;font-size:10px;margin-left:4px">
+              ${(confGan*100).toFixed(0)}%</span>
+          </td>
+          <td style="color:${diffColor};font-weight:700">${diffText}</td>
+        </tr>`;
+    });
+
+    tbody.innerHTML += `
+      <tr style="border-top:2px solid #1a2a3a;background:#080d18">
+        <td style="color:#7a9ab0;font-weight:700">AVG CONF</td>
+        <td style="color:#ff4444;font-weight:700">${(data.avg_conf.raw*100).toFixed(1)}%</td>
+        <td style="color:#ffd700;font-weight:700">${(data.avg_conf.gamma*100).toFixed(1)}%</td>
+        <td style="color:#a78bfa;font-weight:700">${(data.avg_conf.gan*100).toFixed(1)}%</td>
+        <td></td>
+      </tr>`;
+
+    document.getElementById("cmp-results").style.display = "block";
+    document.getElementById("cmp-results").scrollIntoView({ behavior: "smooth" });
+  }
+
+  // ── Incident logger ─────────────────────────────────────────────────────────
+  function loadIncidents() {
+    fetch("/incidents")
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) { console.error(data.error); return; }
+        renderSessions(data.sessions);
+        renderIncidents(data.incidents);
+      });
+  }
+
+  function renderSessions(sessions) {
+    const el = document.getElementById("sessions-list");
+    if (!sessions.length) {
+      el.innerHTML = '<p style="font-size:12px;color:#2a4a6a;">No sessions yet.</p>';
+      return;
+    }
+    el.innerHTML = `
+      <table class="class-table">
+        <thead><tr>
+          <th>Job ID</th>
+          <th>File</th>
+          <th>Started</th>
+          <th>Frames</th>
+          <th>Detections</th>
+          <th style="color:#ff4444">Danger Frames</th>
+        </tr></thead>
+        <tbody>
+          ${sessions.map(s => `
+            <tr>
+              <td style="color:#4a6a8a;font-size:11px">${s.job_id}</td>
+              <td style="color:#cdd9e8">${s.filename}</td>
+              <td style="color:#4a6a8a;font-size:11px">${s.started_at}</td>
+              <td>${s.total_frames}</td>
+              <td style="color:#00ffe0">${s.total_detections}</td>
+              <td style="color:#ff4444;font-weight:700">${s.danger_frames}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`;
+  }
+
+  function renderIncidents(incidents) {
+    const el = document.getElementById("incidents-list");
+    if (!incidents.length) {
+      el.innerHTML =
+        '<p style="font-size:12px;color:#2a4a6a;">No danger incidents logged yet.</p>';
+      return;
+    }
+    el.innerHTML = `
+      <table class="class-table">
+        <thead><tr>
+          <th>Time</th>
+          <th>Job ID</th>
+          <th>Frame</th>
+          <th>Object</th>
+          <th>Confidence</th>
+          <th>Severity</th>
+        </tr></thead>
+        <tbody>
+          ${incidents.map(inc => `
+            <tr>
+              <td style="color:#4a6a8a;font-size:11px">${inc.timestamp}</td>
+              <td style="color:#4a6a8a;font-size:11px">${inc.job_id}</td>
+              <td>${inc.frame_no}</td>
+              <td style="color:#ffd700">${inc.object_cls}</td>
+              <td style="color:#00ffe0">${(inc.confidence*100).toFixed(1)}%</td>
+              <td>
+                <span class="${inc.severity === 'CRITICAL' ? 'sev-critical' : 'sev-high'}">
+                  ${inc.severity}
+                </span>
+              </td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`;
+  }
+
+  function clearIncidents() {
+    if (!confirm("Clear all incident logs and session history?")) return;
+    fetch("/incidents/clear", { method: "POST" })
+      .then(r => r.json())
+      .then(d => { if (d.ok) loadIncidents(); });
+  }
+
+  // Auto-load incidents on page load
+  window.addEventListener("load", loadIncidents);
+
+</script>
+</body>
+</html>

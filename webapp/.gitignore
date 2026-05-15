@@ -1,0 +1,27 @@
+# Videos
+*.mp4
+*.avi
+*.mov
+
+# Model weights & ONNX
+weights/
+*.pt
+*.onnx
+
+# Dataset
+datasets/
+data/
+
+# Outputs & training runs
+outputs/
+runs/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Misc
+*.zip
+*.tar.gz

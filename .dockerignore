@@ -1,0 +1,33 @@
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+
+# Large training artifacts / datasets (mount externally)
+dataset/
+runs/
+
+# Temp / misc
+tmpclaude-*
+*.log
+
+# Video files everywhere EXCEPT a demo sample if you have one
+# (comment the next two lines out if you want to bake in a demo video)
+webapp/uploads/*
+webapp/outputs/*
+
+# Keep *.mp4/*.avi in project root if you want them in the image
+# Otherwise uncomment these:
+# *.mp4
+# *.avi
+# *.mov
+# *.mkv

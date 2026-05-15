@@ -1,0 +1,11 @@
+# Set the root directory of the dataset
+path: C:/Users/Karthik PM/Desktop/Final_Project_Heavy/dataset
+
+# Relative paths to images
+train: train/images
+val: valid/images
+test: test/images
+
+# Classes
+nc: 12
+names: ['Bicycle', 'Boat', 'Bottle', 'Bus', 'Cat', 'Cup', 'Motorbike', 'People', 'Table', 'car', 'chair', 'dog']
